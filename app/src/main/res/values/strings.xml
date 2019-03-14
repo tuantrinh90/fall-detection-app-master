@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Fall Detector</string>
+    <string name="main_title">Ứng dụng phát hiện ngã</string>
+    <string name="main_description">Ứng dụng giúp bạn trong tình huống khẩn cấp bằng cách gọi cho người mà bạn chỉ định</string>
+    <string name="main_btn_choose">Chọn số điện thoại</string>
+    <string name="main_btn_start">Bắt đầu</string>
+    <string name="main_btn_history">Lịch sử</string>
+    <string name="start_title">Biểu đồ hoạt động</string>
+    <string name="set_title">Liên lạc khẩn cấp</string>
+    <string name="set_info">Vui lòng chọn số điện thoại để gửi tin nhắn tới người thân trong trường khẩn cấp</string>
+    <string name="cancel_sms">Hủy gửi tin nhắn</string>
+    <string name="set_code_hint">0030</string>
+    <string name="set_phone_hint">69********</string>
+    <string name="set_btn_done">Hoàn thành</string>
+    <string name="start_clear">Clear</string>
+    <string name="contact">Contact</string>
+    <string name="phone">Guardian\'s phone number</string>
+    <string name="search">Search Contacts</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+</resources>
