@@ -20,6 +20,8 @@ import android.widget.Toast;
 
 import com.example.dimitris.falldetector.Constants;
 import com.example.dimitris.falldetector.R;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -44,18 +46,10 @@ public class SetActivity extends AppCompatActivity {
 
         sharedPreferences = getSharedPreferences(Constants.MyPREFERENCES, Context.MODE_PRIVATE);
         // use last contact's data
-        String ph = sharedPreferences.getString(Constants.Phone, null);
-        String c = sharedPreferences.getString(Constants.Code, null);
-        if (ph != null && c != null) {
-            //mEditTextPhoneNumber.setText(ph);
-            //mEditTextCode.setText(c);
-        }
-
+        String jsonText = sharedPreferences.getString("key", null);
+        List<ContactModel> mContactList = new Gson().fromJson(jsonText, new TypeToken<List<ContactModel>>() {}.getType());
         contactList = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
-            contactList.add(new ContactModel("Số điện thoại " + (i + 1), "", i));
-        }
-        recycleContact = (RecyclerView) findViewById(R.id.recycleContact);
+        recycleContact = findViewById(R.id.recycleContact);
         recycleContact.setNestedScrollingEnabled(false);
         recycleContact.setLayoutManager(new LinearLayoutManager(this));
         phoneAdapter = new PhoneAdapter(contactList, getApplicationContext(), new PhoneAdapter.onItemClickClick() {
@@ -77,27 +71,27 @@ public class SetActivity extends AppCompatActivity {
                 phoneAdapter.notifyItemChanged(contact.getPos());
             }
         });
-
         recycleContact.setAdapter(phoneAdapter);
 
+        if (mContactList == null) {
+            for (int i = 0; i < 3; i++) {
+                contactList.add(new ContactModel("Số điện thoại " + (i + 1), "", i));
+            }
+        } else {
+            contactList.addAll(mContactList);
+        }
+        phoneAdapter.notifyDataSetChanged();
         mBttnDone = (Button) findViewById(R.id.bttn_done);
         mBttnDone.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
                 try {
-//                    String countryCode = mEditTextCode.getText().toString();
-//                    String phoneNumber = mEditTextPhoneNumber.getText().toString();
-//
-//                    SharedPreferences.Editor editor = sharedPreferences.edit();
-//                    editor.putString(Constants.Code, countryCode);
-//                    editor.putString(Constants.Phone, phoneNumber);
-//                    editor.commit();
-//
-//
-//                    Log.d(TAG, "country code: " + countryCode + " phone number: " + phoneNumber);
-//                    String contact = "+" + countryCode + " " + phoneNumber;
-//                    Toast.makeText(getApplicationContext(), "Contact " + contact + " saved.", Toast.LENGTH_LONG).show();
+                    Gson gson = new Gson();
+                    String jsonText = gson.toJson(contactList);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString("key", jsonText);
+                    editor.apply();
                 } catch (Exception e) {
                     Log.e(TAG, "onClick: error during setting code or phone number");
                     Toast.makeText(getApplicationContext(), "Error during initializing contact", Toast.LENGTH_LONG).show();
@@ -106,9 +100,7 @@ public class SetActivity extends AppCompatActivity {
                 Intent intent = new Intent();
                 intent.putExtra("list", (Serializable) contactList);
                 setResult(RESULT_OK, intent);
-                // go back to previous activity
                 finish();
-
             }
         });
     }

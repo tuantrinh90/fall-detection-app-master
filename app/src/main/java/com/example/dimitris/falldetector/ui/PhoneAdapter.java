@@ -77,6 +77,7 @@ public class PhoneAdapter extends RecyclerView.Adapter<PhoneAdapter.PhoneViewHol
 
     interface onItemClickClick {
         void addItem(ContactModel contact);
+
         void removeItem(ContactModel contact);
     }
 }
