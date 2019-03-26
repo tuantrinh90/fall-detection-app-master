@@ -35,6 +35,8 @@ import com.example.dimitris.falldetector.Constants;
 import com.example.dimitris.falldetector.core.Plot;
 import com.example.dimitris.falldetector.R;
 import com.github.mikephil.charting.charts.LineChart;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.text.DateFormat;
 import java.util.Date;
@@ -72,7 +74,10 @@ public class StartActivity extends AppCompatActivity {
 
         mPlot = new Plot(mLineChart);
         mPlot.setUp();
-        contactModels = (List<ContactModel>) getIntent().getSerializableExtra("ContactList");
+        SharedPreferences sharedPreferences = getSharedPreferences(Constants.MyPREFERENCES, Context.MODE_PRIVATE);
+        String jsonText = sharedPreferences.getString("key", null);
+        contactModels = new Gson().fromJson(jsonText, new TypeToken<List<ContactModel>>() {
+        }.getType());
         Log.e("StartActivity", contactModels.toString());
 
         // set accelerometer sensor
@@ -134,6 +139,12 @@ public class StartActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+    }
+
     private void timerFall() {
         timer = new CountDownTimer(30000, 1000) {
             public void onTick(long millisUntilFinished) {
@@ -180,16 +191,16 @@ public class StartActivity extends AppCompatActivity {
     }
 
     public void sendSms() {
-        String numberContact = "";
+        SmsManager sms = SmsManager.getDefault();
+        String message = "Your loved ones are falling at coordinates: %.5f , %.5f , " +
+                "link : http://maps.google.com/?q=%.5f,%.5f";
+        message = String.format(Locale.US, message, latitude, longitude, latitude, longitude);
         try {
-            for (int i = 0; i < contactModels.size(); i++) {
-                numberContact = contactModels.get(i).getPhone();
+            for (ContactModel contactModel : contactModels) {
+                if (!contactModel.getPhone().isEmpty()) {
+                    sms.sendTextMessage(contactModel.getPhone(), null, message, null, null);
+                }
             }
-            String message = "Nguoi than cua ban da bi nga o toa do: %.5f , %.5f , " +
-                    "duong link : http://maps.google.com/?q=%.5f,%.5f";
-            message = String.format(Locale.US, message, latitude, longitude, latitude, longitude);
-            SmsManager sms = SmsManager.getDefault();
-            sms.sendTextMessage(numberContact, null, message, null, null);
             Toast.makeText(getApplicationContext(), "Message Sent", Toast.LENGTH_LONG).show();
         } catch (Exception ex) {
             Toast.makeText(getApplicationContext(), ex.getMessage(),

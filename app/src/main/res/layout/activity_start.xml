@@ -25,6 +25,7 @@
         android:textColor="@color/colorPrimary"
         android:textSize="25dp"
         android:textStyle="bold"
+        android:visibility="gone"
         app:layout_constraintLeft_toLeftOf="@+id/guideline"
         app:layout_constraintRight_toLeftOf="@+id/switch1"
         tools:ignore="MissingConstraints"
