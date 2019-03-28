@@ -76,26 +76,25 @@ public class StartActivity extends AppCompatActivity {
         mPlot.setUp();
         SharedPreferences sharedPreferences = getSharedPreferences(Constants.MyPREFERENCES, Context.MODE_PRIVATE);
         String jsonText = sharedPreferences.getString("key", null);
-        contactModels = new Gson().fromJson(jsonText, new TypeToken<List<ContactModel>>() {
-        }.getType());
-        Log.e("StartActivity", contactModels.toString());
+        contactModels = new Gson().fromJson(jsonText, new TypeToken<List<ContactModel>>() {}.getType());
 
         // set accelerometer sensor
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         final Accelerometer accelerometer = new Accelerometer(mSensorManager, mSensor, mHandler);
         accelerometer.startListening();
+        mSwitchCompat.setChecked(true);
 
-//        mSwitchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                if (isChecked) {
-//                    accelerometer.startListening();
-//                } else {
-//                    accelerometer.stopListening();
-//                }
-//            }
-//        });
+        mSwitchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    accelerometer.startListening();
+                } else {
+                    accelerometer.stopListening();
+                }
+            }
+        });
 
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
@@ -196,9 +195,11 @@ public class StartActivity extends AppCompatActivity {
                 "link : http://maps.google.com/?q=%.5f,%.5f";
         message = String.format(Locale.US, message, latitude, longitude, latitude, longitude);
         try {
-            for (ContactModel contactModel : contactModels) {
-                if (!contactModel.getPhone().isEmpty()) {
-                    sms.sendTextMessage(contactModel.getPhone(), null, message, null, null);
+            if (contactModels != null) {
+                for (ContactModel contactModel : contactModels) {
+                    if (!contactModel.getPhone().isEmpty()) {
+                        sms.sendTextMessage(contactModel.getPhone(), null, message, null, null);
+                    }
                 }
             }
             Toast.makeText(getApplicationContext(), "Message Sent", Toast.LENGTH_LONG).show();
@@ -247,7 +248,7 @@ public class StartActivity extends AppCompatActivity {
                     editor.putString(Constants.History, oldHistory + newHistory);
                     editor.commit();
                     // stop listening the sensor
-                    //mSwitchCompat.setChecked(false);
+                    mSwitchCompat.setChecked(false);
                     break;
                 case Constants.MESSAGE_TOAST:
                     Toast.makeText(getApplicationContext(), msg.getData().getString(Constants.TOAST),
