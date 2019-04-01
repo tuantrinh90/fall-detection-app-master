@@ -99,6 +99,12 @@ public class SensorBackgroundService extends Service {
         }.start();
     }
 
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        accelerometer = new Accelerometer(mSensorManager, mSensor, mHandler);
+        accelerometer.startListening();
+        super.onTaskRemoved(rootIntent);
+    }
 
     private final Handler mHandler = new Handler() {
         @Override
