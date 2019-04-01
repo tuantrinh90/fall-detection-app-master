@@ -89,7 +89,11 @@ public class StartActivity extends AppCompatActivity {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    startService(new Intent(StartActivity.this, SensorBackgroundService.class));
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(new Intent(StartActivity.this, SensorBackgroundService.class));
+                    } else {
+                        startService(new Intent(StartActivity.this, SensorBackgroundService.class));
+                    }
                 } else {
                     stopService(new Intent(StartActivity.this, SensorBackgroundService.class));
                 }

@@ -17,7 +17,7 @@
         android:roundIcon="@drawable/ic_man_circle"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".ui.MainActivity">
+        <activity android:name=".ui.StartActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -27,7 +27,7 @@
         <activity
             android:name=".ui.SetActivity"
             android:windowSoftInputMode="adjustResize|stateHidden" />
-        <activity android:name=".ui.StartActivity" />
+        <activity android:name=".ui.MainActivity" />
         <activity android:name=".ui.HistoryActivity" />
 
         <service android:name=".ui.SensorBackgroundService" />
