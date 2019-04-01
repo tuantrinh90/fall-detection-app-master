@@ -34,9 +34,16 @@ import com.example.dimitris.falldetector.core.Accelerometer;
 import com.example.dimitris.falldetector.Constants;
 import com.example.dimitris.falldetector.core.Plot;
 import com.example.dimitris.falldetector.R;
+import com.example.dimitris.falldetector.event.EventChart;
+import com.example.dimitris.falldetector.event.EventTimer;
+import com.example.dimitris.falldetector.event.EventTimerFinished;
 import com.github.mikephil.charting.charts.LineChart;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.text.DateFormat;
 import java.util.Date;
@@ -48,56 +55,48 @@ public class StartActivity extends AppCompatActivity {
     public static final String TAG = "StartActivity";
 
     private SwitchCompat mSwitchCompat;
-
-    private SensorManager mSensorManager;
-    private Sensor mSensor;
-
     private LineChart mLineChart;
     private Plot mPlot;
-    String contact;
     double latitude, longitude;
     private LocationManager locationManager;
     private LocationListener listener;
     Button btnCancel;
-    CountDownTimer timer;
     private List<ContactModel> contactModels;
+    private SharedPreferences sharedPreferences;
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
 
+        sharedPreferences = getSharedPreferences(Constants.MyPREFERENCES, Context.MODE_PRIVATE);
         mSwitchCompat = (SwitchCompat) findViewById(R.id.switch1);
         btnCancel = (Button) findViewById(R.id.cancel);
         mLineChart = (LineChart) findViewById(R.id.chart);
 
         mPlot = new Plot(mLineChart);
         mPlot.setUp();
+        EventBus.getDefault().register(this);
         SharedPreferences sharedPreferences = getSharedPreferences(Constants.MyPREFERENCES, Context.MODE_PRIVATE);
         String jsonText = sharedPreferences.getString("key", null);
-        contactModels = new Gson().fromJson(jsonText, new TypeToken<List<ContactModel>>() {}.getType());
-
-        // set accelerometer sensor
-        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        final Accelerometer accelerometer = new Accelerometer(mSensorManager, mSensor, mHandler);
-        accelerometer.startListening();
+        contactModels = new Gson().fromJson(jsonText, new TypeToken<List<ContactModel>>() {
+        }.getType());
+        startService(new Intent(StartActivity.this, SensorBackgroundService.class));
         mSwitchCompat.setChecked(true);
 
+        // set accelerometer sensor
         mSwitchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    accelerometer.startListening();
+                    startService(new Intent(StartActivity.this, SensorBackgroundService.class));
                 } else {
-                    accelerometer.stopListening();
+                    stopService(new Intent(StartActivity.this, SensorBackgroundService.class));
                 }
             }
         });
 
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-
         listener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
@@ -138,41 +137,16 @@ public class StartActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void updateLineChart(EventChart eventChart) {
+        mPlot.addEntry(eventChart.getValues());
     }
 
-    private void timerFall() {
-        timer = new CountDownTimer(30000, 1000) {
-            public void onTick(long millisUntilFinished) {
-                int seconds = (int) (millisUntilFinished / 1000);
-                int minutes = seconds / 60;
-                seconds = seconds % 60;
-                btnCancel.setText(String.format("%02d", minutes)
-                        + ":" + String.format("%02d", seconds));
-                //here you can have your logic to set text to edittext
-                btnCancel.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        timer.cancel();
-                        btnCancel.setText("SMS Alert Cancelled");
-                    }
-                });
-            }
-
-            public void onFinish() {
-                int permissionCheck = ContextCompat.checkSelfPermission(StartActivity.this, Manifest.permission.SEND_SMS);
-                if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(
-                            StartActivity.this, new String[]{Manifest.permission.SEND_SMS}, 123);
-                }
-                btnCancel.setText("SMS Alert Activated");
-                sendSms();
-            }
-
-        }.start();
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void eventCheck(EventTimerFinished eventTimerFinished) {
+        if (eventTimerFinished.getEvent().equals(Constants.ACTION_EVENT_CHECKED)) {
+            mSwitchCompat.setChecked(false);
+        }
     }
 
     void configure_button() {
@@ -189,6 +163,37 @@ public class StartActivity extends AppCompatActivity {
         }
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void eventTimerStart(EventTimer e) {
+        btnCancel.setText(String.format("%02d", e.getMinutes())
+                + ":" + String.format("%02d", e.getSecond()));
+        //here you can have your logic to set text to edittext
+        btnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences.Editor edit = sharedPreferences.edit();
+                edit.putBoolean("stop", true);
+                edit.apply();
+                btnCancel.setText("SMS Alert Cancelled");
+            }
+        });
+    }
+
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void eventTimerFinished(EventTimerFinished e) {
+        if (e.getEvent().equals(Constants.ACTION_EVENT_TIMER_FINISHED)) {
+            int permissionCheck = ContextCompat.checkSelfPermission(StartActivity.this, Manifest.permission.SEND_SMS);
+            if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                        StartActivity.this, new String[]{Manifest.permission.SEND_SMS}, 123);
+            }
+            btnCancel.setText("SMS Alert Activated");
+            sendSms();
+        }
+    }
+
+
     public void sendSms() {
         SmsManager sms = SmsManager.getDefault();
         String message = "Your loved ones are falling at coordinates: %.5f , %.5f , " +
@@ -199,10 +204,10 @@ public class StartActivity extends AppCompatActivity {
                 for (ContactModel contactModel : contactModels) {
                     if (!contactModel.getPhone().isEmpty()) {
                         sms.sendTextMessage(contactModel.getPhone(), null, message, null, null);
+                        Toast.makeText(getApplicationContext(), "Message Sent", Toast.LENGTH_LONG).show();
                     }
                 }
             }
-            Toast.makeText(getApplicationContext(), "Message Sent", Toast.LENGTH_LONG).show();
         } catch (Exception ex) {
             Toast.makeText(getApplicationContext(), ex.getMessage(),
                     Toast.LENGTH_LONG).show();
@@ -229,33 +234,9 @@ public class StartActivity extends AppCompatActivity {
         }
     }
 
-    private final Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case Constants.MESSAGE_CHANGED:
-                    float value = msg.getData().getFloat(Constants.VALUE);
-                    mPlot.addEntry(value);
-                    break;
-                case Constants.MESSAGE_EMERGENCY:
-                    Alarm.call(getApplicationContext());
-                    timerFall();
-                    String newHistory = DateFormat.getDateTimeInstance().format(new Date()) + "\n";
-                    // save history to shared preferences
-                    SharedPreferences sharedPreferences = getSharedPreferences(Constants.MyPREFERENCES, Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    String oldHistory = sharedPreferences.getString(Constants.History, null); // get previous history
-                    editor.putString(Constants.History, oldHistory + newHistory);
-                    editor.commit();
-                    // stop listening the sensor
-                    mSwitchCompat.setChecked(false);
-                    break;
-                case Constants.MESSAGE_TOAST:
-                    Toast.makeText(getApplicationContext(), msg.getData().getString(Constants.TOAST),
-                            Toast.LENGTH_SHORT).show();
-                    break;
-            }
-        }
-    };
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
+    }
 }
