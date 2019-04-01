@@ -142,12 +142,12 @@ public class StartActivity extends AppCompatActivity {
         mPlot.addEntry(eventChart.getValues());
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void eventCheck(EventTimerFinished eventTimerFinished) {
-        if (eventTimerFinished.getEvent().equals(Constants.ACTION_EVENT_CHECKED)) {
-            mSwitchCompat.setChecked(false);
-        }
-    }
+//    @Subscribe(threadMode = ThreadMode.MAIN)
+//    public void eventCheck(EventTimerFinished eventTimerFinished) {
+//        if (eventTimerFinished.getEvent().equals(Constants.ACTION_EVENT_CHECKED)) {
+//            mSwitchCompat.setChecked(false);
+//        }
+//    }
 
     void configure_button() {
         // first check for permissions

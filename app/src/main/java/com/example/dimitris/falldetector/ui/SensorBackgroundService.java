@@ -98,7 +98,7 @@ public class SensorBackgroundService extends Service {
                     editor.putString(Constants.History, oldHistory + newHistory);
                     editor.commit();
                     // stop listening the sensor
-                    EventBus.getDefault().post(new EventTimerFinished(Constants.ACTION_EVENT_CHECKED));
+                    //EventBus.getDefault().post(new EventTimerFinished(Constants.ACTION_EVENT_CHECKED));
                     break;
                 case Constants.MESSAGE_TOAST:
                     Toast.makeText(getApplicationContext(), msg.getData().getString(Constants.TOAST),
